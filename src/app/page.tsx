@@ -2,6 +2,11 @@ import Link from "next/link";
 
 import { CreatePost } from "~/app/_components/create-post";
 import { api } from "~/trpc/server";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
+import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert"
+import { Separator } from "../components/ui/separator"
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { Button } from "~/components/ui/button";
 
 export default async function Home() {
   const hello = await api.post.hello({ text: "from tRPC" });
@@ -49,17 +54,46 @@ export default async function Home() {
 }
 
 async function CrudShowcase() {
-  const latestPost = await api.post.getLatest();
+  
+  const posts = await api.post.get10()
 
   return (
-    <div className="w-full max-w-xs">
-      {latestPost ? (
-        <p className="truncate">Your most recent post: {latestPost.name}</p>
-      ) : (
-        <p>You have no posts yet.</p>
-      )}
+    <div className="w-full max-w-4xl">
+      <Table>
+        <TableCaption>A list of your recent posts.</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Created At</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {posts.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={3} className="text-center">
+                You have no posts yet.
+              </TableCell>
+            </TableRow>
+          ) : (
+            posts.map((post) => (
+              <TableRow key={post.id}>
+                <TableCell className="font-medium">{post.name}</TableCell>
+                <TableCell>{new Date(post.createdAt).toLocaleString()}</TableCell>
+                <TableCell>
+                  <Button variant="outline" size="sm" className="text-blue-500">
+                    Edit
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
 
-      <CreatePost />
+      <div className="mt-4">
+        <CreatePost />
+      </div>
     </div>
-  );
+  )
 }

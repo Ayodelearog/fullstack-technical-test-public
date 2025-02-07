@@ -1,43 +1,64 @@
-"use client";
+"use client"
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { api } from "~/trpc/react"
+import { Button } from "~/components/ui/button"
+import { Input } from "~/components/ui/input"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "~/components/ui/form"
 
-import { api } from "~/trpc/react";
+// Define the Zod schema
+const formSchema = z.object({
+  name: z.string().min(3, "Title must be at least 3 characters long"),
+})
+
+// Infer the type from the schema
+type FormData = z.infer<typeof formSchema>
 
 export function CreatePost() {
-  const router = useRouter();
-  const [name, setName] = useState("");
+  const router = useRouter()
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+    },
+  })
 
   const createPost = api.post.create.useMutation({
     onSuccess: () => {
-      router.refresh();
-      setName("");
+      router.refresh()
+      form.reset()
     },
-  });
+  })
+
+  const onSubmit = (data: FormData) => {
+    createPost.mutate(data)
+  }
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        createPost.mutate({ name });
-      }}
-      className="flex flex-col gap-2"
-    >
-      <input
-        type="text"
-        placeholder="Title"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="w-full rounded-full px-4 py-2 text-black"
-      />
-      <button
-        type="submit"
-        className="rounded-full bg-white/10 px-10 py-3 font-semibold transition hover:bg-white/20"
-        disabled={createPost.isPending}
-      >
-        {createPost.isPending ? "Submitting..." : "Submit"}
-      </button>
-    </form>
-  );
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Post Title</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter post title" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit" disabled={createPost.isPending}>
+          {createPost.isPending ? "Submitting..." : "Submit"}
+        </Button>
+      </form>
+    </Form>
+  )
 }
+
